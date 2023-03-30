@@ -89,7 +89,7 @@ resource "google_compute_global_address" "default" {
 
 resource "google_compute_url_map" "default" {
   project         = var.project_id
-  name            = "rogerthat-load-balancer"
+  name            = "rogerthat-https-gclb"
   default_service = google_compute_backend_service.default.id
   # Host rules lets you forward requests based on host and path
   # The hosts in this host_rule subscibe to the rules in the corresponding path_matcher block below it
