@@ -125,6 +125,25 @@ resource "google_compute_target_http_proxy" "default" {
   url_map = google_compute_url_map.default.id
 }
 
+# Add an https proxy
+resource "google_compute_target_https_proxy" "default" {
+  project = var.project_id
+  name    = "rogerthat-https-proxy"
+  url_map = google_compute_url_map.default.id
+
+  ssl_certificates = [google_compute_managed_ssl_certificate.default.id]
+}
+
+# The Google managed SSL cert used for the https proxy
+resource "google_compute_managed_ssl_certificate" "default" {
+  project = var.project_id
+  name    = "rogerthat-ssl-certificate"
+
+  managed {
+    domains = ["${var.domain}."]
+  }
+}
+
 # Global forwarding rule
 resource "google_compute_global_forwarding_rule" "http" {
   project               = var.project_id
