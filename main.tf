@@ -1,3 +1,16 @@
+module "project_services" {
+  source                      = "terraform-google-modules/project-factory/google//modules/project_services"
+  version                     = "13.0.0"
+  disable_services_on_destroy = false
+  project_id                  = var.project_id
+  enable_apis                 = var.enable_apis
+
+  activate_apis = [
+    "compute.googleapis.com",
+    "run.googleapis.com"
+  ]
+}
+
 # Run service
 
 resource "google_cloud_run_v2_service" "default" {
@@ -9,7 +22,14 @@ resource "google_cloud_run_v2_service" "default" {
     containers {
       image = "us-docker.pkg.dev/cloudrun/container/hello"
     }
+    service_account = google_service_account.default.email
   }
+}
+
+resource "google_service_account" "default" {
+  project      = var.project_id
+  account_id   = "cloud-runner"
+  display_name = "Service Account"
 }
 
 data "google_iam_policy" "noauth" {
@@ -34,6 +54,7 @@ resource "google_cloud_run_service_iam_policy" "noauth" {
 # First an endpoint group that is configured to include your Cloud Run service
 
 resource "google_compute_region_network_endpoint_group" "default" {
+  project               = var.project_id
   name                  = "rogerthat-endpoint-group"
   network_endpoint_type = "SERVERLESS"
   region                = "us-central1"
@@ -45,6 +66,7 @@ resource "google_compute_region_network_endpoint_group" "default" {
 # Next, a backend service that uses that endpoint group as a backend.
 
 resource "google_compute_backend_service" "default" {
+  project               = var.project_id
   name                  = "rogerthat-run-backend-service"
   port_name             = "http"
   protocol              = "HTTP"
@@ -53,23 +75,25 @@ resource "google_compute_backend_service" "default" {
     group = google_compute_region_network_endpoint_group.default.id
   }
   log_config {
+    enable = false
   }
 }
 # We'll also need an external IP address to assign to the load balancer and serve as a our frontend
 
 resource "google_compute_global_address" "default" {
-  name    = "rogerthat-ip"
   project = var.project_id
+  name    = "rogerthat-ip"
 }
 
 # The URL map is what appears in Console on the Load Balancing page.
 
 resource "google_compute_url_map" "default" {
+  project         = var.project_id
   name            = "rogerthat-load-balancer"
   default_service = google_compute_backend_service.default.id
   # Host rules lets you forward requests based on host and path
   # The hosts in this host_rule subscibe to the rules in the corresponding path_matcher block below it
-  host_rule { 
+  host_rule {
     hosts        = ["${google_compute_global_address.default.address}"]
     path_matcher = "external-ip"
   }
@@ -85,16 +109,18 @@ resource "google_compute_url_map" "default" {
 }
 
 # # HTTP proxy
-# resource "google_compute_target_http_proxy" "default" {
-#   name    = "rogerthat-http-proxy"
-#   url_map = google_compute_url_map.default.id
-# }
+resource "google_compute_target_http_proxy" "default" {
+  project = var.project_id
+  name    = "rogerthat-http-proxy"
+  url_map = google_compute_url_map.default.id
+}
 
-# # Global forwarding rule
-# resource "google_compute_global_forwarding_rule" "http" {
-#   name                  = "rogerthat-http-forwarding-rule"
-#   load_balancing_scheme = "EXTERNAL_MANAGED"
-#   port_range            = "80"
-#   target                = google_compute_target_http_proxy.default.id
-#   ip_address            = google_compute_global_address.default.id
-# }
+# Global forwarding rule
+resource "google_compute_global_forwarding_rule" "http" {
+  project               = var.project_id
+  name                  = "rogerthat-http-forwarding-rule"
+  load_balancing_scheme = "EXTERNAL_MANAGED"
+  port_range            = "80"
+  target                = google_compute_target_http_proxy.default.id
+  ip_address            = google_compute_global_address.default.id
+}
