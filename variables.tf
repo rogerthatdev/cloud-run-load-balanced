@@ -7,3 +7,8 @@ variable "enable_apis" {
   default = true
 
 }
+
+variable "domain" {
+  type        = string
+  description = "A valid domain name. Its DNS must be updated to an ephemeral ip address known after apply."
+}
