@@ -153,3 +153,12 @@ resource "google_compute_global_forwarding_rule" "http" {
   target                = google_compute_target_http_proxy.default.id
   ip_address            = google_compute_global_address.default.id
 }
+
+resource "google_compute_global_forwarding_rule" "https" {
+  project               = var.project_id
+  name                  = "rogerthat-https-forwarding-rule"
+  load_balancing_scheme = "EXTERNAL_MANAGED"
+  port_range            = "443"
+  target                = google_compute_target_https_proxy.default.id
+  ip_address            = google_compute_global_address.default.id
+}
