@@ -94,7 +94,9 @@ resource "google_compute_url_map" "default" {
   # Host rules lets you forward requests based on host and path
   # The hosts in this host_rule subscibe to the rules in the corresponding path_matcher block below it
   host_rule {
-    hosts        = ["${google_compute_global_address.default.address}"]
+    # hosts        = ["${google_compute_global_address.default.address}"]
+    # With https we can use our domain as a host instead of the ip address
+    hosts        = ["${var.domain}"]
     path_matcher = "external-ip"
   }
   path_matcher {
