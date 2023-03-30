@@ -108,6 +108,16 @@ resource "google_compute_url_map" "default" {
   }
 }
 
+resource "google_compute_url_map" "https_redirect" {
+  project = var.project_id
+  name    = "rogerthat-http-redirect"
+  default_url_redirect {
+    https_redirect         = true
+    redirect_response_code = "MOVED_PERMANENTLY_DEFAULT"
+    strip_query            = false
+  }
+}
+
 # # HTTP proxy
 resource "google_compute_target_http_proxy" "default" {
   project = var.project_id
